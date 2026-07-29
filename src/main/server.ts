@@ -1,5 +1,8 @@
+import '../adapters/outbound/logger';
 import express from 'express';
-import { InMemoryRuleRepository } from '../adapters/outbound/persistence/InMemoryRuleRepository';
+import { config } from './env';
+import { databaseService } from '../adapters/outbound/persistence/drizzle/DatabaseService';
+import { DrizzleRuleRepository } from '../adapters/outbound/persistence/DrizzleRuleRepository';
 import { FirewallService } from '../application/use-cases/FirewallService';
 import { FirewallController } from '../adapters/inbound/FirewallController';
 
@@ -7,18 +10,24 @@ const app = express();
 app.use(express.json());
 
 app.use((req, res, next) => {
-  console.log(`[${new Date().toISOString()}] ${req.method} ${req.originalUrl}`);
+  console.info(`${req.method} ${req.originalUrl}`);
   next();
 });
 
+async function bootstrap() {
+  
+  await databaseService.connectWithRetry();
 
-const ruleRepository = new InMemoryRuleRepository();
-const firewallService = new FirewallService(ruleRepository);
-const firewallController = new FirewallController(firewallService);
+ 
+  const ruleRepository = new DrizzleRuleRepository();
+  const firewallService = new FirewallService(ruleRepository);
+  const firewallController = new FirewallController(firewallService);
 
-app.use('/api/firewall', firewallController.router);
+  app.use('/api/firewall', firewallController.router);
 
-const PORT = process.env.PORT || 3000;
-app.listen(PORT, () => {
-  console.log(`Server is running on port ${PORT}`);
-});
+  app.listen(config.port, () => {
+    console.log(`Server is running in ${config.env} mode on port ${config.port}`);
+  });
+}
+
+bootstrap();

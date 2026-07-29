@@ -1,9 +1,10 @@
+// application/ports/outbound/RuleRepository.ts
 import { Rule } from '../../../domain/Rule';
 
 export interface RuleRepository {
-  save(rule: Rule): Rule;
-  saveAll(rules: Rule[]): Rule[];
-  delete(ids: number[]): Rule[];
-  getAll(): Rule[];
-  findByIds(ids: number[]): Rule[];
+  save(rule: Rule): Promise<Rule>;
+  saveAll(rules: Rule[]): Promise<Rule[]>;
+  delete(ids: number[]): Promise<Rule[]>;
+  getAll(): Promise<Rule[]>;
+  findByIds(ids: number[]): Promise<Rule[]>;
 }

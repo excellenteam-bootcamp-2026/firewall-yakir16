@@ -1,6 +1,6 @@
-import { Request, Response, Router } from 'express';
-import { FirewallService } from '../../../application/use-cases/FirewallService';
-import { RuleType } from '../../../domain/Rule';
+import { type Request,type Response, Router } from 'express';
+import { type FirewallService } from '../../application/use-cases/FirewallService';
+import { type RuleType } from '../../domain/Rule';
 
 export class FirewallController {
   public router = Router();

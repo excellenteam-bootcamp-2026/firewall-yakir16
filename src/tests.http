@@ -1,0 +1,94 @@
+@baseUrl = http://localhost:3000/api/firewall
+
+### 1. Add IPs (Blacklist)
+POST {{baseUrl}}/ips
+Content-Type: application/json
+
+{
+  "values": ["1.1.1.1", "192.168.1.100"],
+  "mode": "blacklist"
+}
+
+### 2. Add Domains (Whitelist)
+POST {{baseUrl}}/domains
+Content-Type: application/json
+
+{
+  "values": ["example.com", "github.com"],
+  "mode": "whitelist"
+}
+
+### 3. Add Ports (Blacklist)
+POST {{baseUrl}}/ports
+Content-Type: application/json
+
+{
+  "values": [22, 80, 443],
+  "mode": "blacklist"
+}
+
+### 4. Get All Rules
+GET {{baseUrl}}/rules
+
+### 5. Get Rules Filtered by Type (IP only)
+GET {{baseUrl}}/rules?type=ip
+
+### 6. Update Rule Activation Status
+# (Assuming rules 1 and 2 were created from the first request)
+PATCH {{baseUrl}}/rules/status
+Content-Type: application/json
+
+{
+  "ids": [1, 2],
+  "active": false
+}
+
+### 7. Delete Firewall Rules
+# (Assuming rule 3 is one of the domains or ports)
+DELETE {{baseUrl}}/rules
+Content-Type: application/json
+
+{
+  "ids": [3]
+}
+
+
+# ==========================================
+# שגיאות וולידציה (לבדיקת מנגנון הטיפול בשגיאות)
+# ==========================================
+
+### 8. Validation Error: Invalid IP Address
+POST {{baseUrl}}/ips
+Content-Type: application/json
+
+{
+  "values": ["999.1.1.1", "not-an-ip"],
+  "mode": "blacklist"
+}
+
+### 9. Validation Error: Invalid Domain (Contains Protocol)
+POST {{baseUrl}}/domains
+Content-Type: application/json
+
+{
+  "values": ["https://example.com"],
+  "mode": "blacklist"
+}
+
+### 10. Validation Error: Invalid Port (Out of range)
+POST {{baseUrl}}/ports
+Content-Type: application/json
+
+{
+  "values": [70000, -5],
+  "mode": "whitelist"
+}
+
+### 11. Validation Error: Invalid Mode
+POST {{baseUrl}}/ips
+Content-Type: application/json
+
+{
+  "values": ["8.8.8.8"],
+  "mode": "yellowlist"
+}
