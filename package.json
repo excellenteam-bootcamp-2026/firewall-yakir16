@@ -1,0 +1,25 @@
+{
+  "name": "ts-rule-builder",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "directories": {
+    "test": "tests"
+  },
+  "devDependencies": {},
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rule-builder-team/py-rule-builder.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/rule-builder-team/py-rule-builder/issues"
+  },
+  "homepage": "https://github.com/rule-builder-team/py-rule-builder#readme"
+}

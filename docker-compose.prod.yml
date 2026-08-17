@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  ts-service-prod:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ts-service-prod
+    restart: always
+    env_file:
+      - .env.prod
+    environment:
+      - NODE_OPTIONS=--dns-result-order=ipv4first
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./logs:/app/logs  
