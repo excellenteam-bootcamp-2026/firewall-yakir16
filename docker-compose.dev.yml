@@ -1,0 +1,18 @@
+services:
+  app:
+    build: .
+    container_name: firewall_worker_dev
+    restart: unless-stopped
+    environment:
+      - PYTHONPATH=/app
+    env_file:
+      - .env.dev
+    networks:
+      - firewall_net
+    volumes:
+      - .:/app
+      - ./logs:/app/logs
+
+networks:
+  firewall_net:
+    driver: bridge

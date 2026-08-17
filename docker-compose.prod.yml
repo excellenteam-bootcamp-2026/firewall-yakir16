@@ -1,0 +1,17 @@
+services:
+  app:
+    build: .
+    container_name: firewall_worker_prod
+    restart: always
+    environment:
+      - PYTHONPATH=/app
+    env_file:
+      - .env.prod
+    networks:
+      - firewall_net
+    volumes:
+      - ./logs:/app/logs
+
+networks:
+  firewall_net:
+    driver: bridge
