@@ -3,25 +3,26 @@
     "module": "ESNext",
     "moduleResolution": "bundler",
     "target": "ESNext",
-    
-    /* Outputs & Checks */
+
+  
     "sourceMap": true,
     "declaration": true,
     "declarationMap": true,
 
-    /* Strict Typechecking */
+
     "strict": true,
     "noUncheckedIndexedAccess": true,
     "exactOptionalPropertyTypes": true,
 
-    /* ESM & Syntax rules */
+   
     "verbatimModuleSyntax": true,
     "isolatedModules": true,
     "moduleDetection": "force",
     "skipLibCheck": true,
+
     
-    /* Allow imports without .js extensions for tsx */
     "allowImportingTsExtensions": true,
     "noEmit": true
-  }
+  },
+  "include": ["src/**/*.ts", "scripts/**/*.ts", "tests/**/*.ts"]
 }
