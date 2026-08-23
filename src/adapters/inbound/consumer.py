@@ -1,13 +1,22 @@
 from __future__ import annotations
+
 import asyncio
 import json
-from typing import Literal, Union, TYPE_CHECKING
+from typing import TYPE_CHECKING, Literal, Union
 
-from aio_pika import IncomingMessage, RobustQueue, Message
-from pydantic import BaseModel, ConfigDict, Field, ValidationError, TypeAdapter
-from src.adapters.queue.rabbitmq import RabbitMQConnection, rabbitmq_connection
-from src.main.logger import logger
+from aio_pika import IncomingMessage, Message, RobustQueue
+from pydantic import BaseModel, ConfigDict, Field, TypeAdapter, ValidationError
+from sqlalchemy.exc import IntegrityError
+
+from src.adapters.outbound.queue.rabbitmq import RabbitMQConnection, rabbitmq_connection
+from src.application.commands.firewall_commands import (
+    AddRulesCommand,
+    DeleteRulesCommand,
+    RuleInput,
+    UpdateRulesStatusCommand,
+)
 from src.main.config import settings
+from src.main.logger import logger
 
 if TYPE_CHECKING:
     from src.application.use_cases.FirewallService import FirewallService
@@ -18,7 +27,7 @@ class RuleItem(BaseModel):
     id: int | None = None
     type: str = Field(min_length=1)
     mode: Literal["blacklist", "whitelist"]
-    value: str = Field(min_length=1)
+    value: str | int
     active: bool
 
 
@@ -30,18 +39,21 @@ class CreateRulePayload(BaseModel):
 
 
 class AddRuleMessage(BaseModel):
-    model_config = ConfigDict(extra="ignore", strict=True)
+    model_config = ConfigDict(extra="ignore", strict=True, populate_by_name=True)
     event: Literal["CREATE_RULE"] = Field(alias="eventType")
     timestamp: str
     payload: CreateRulePayload
 
-    @property
-    def action(self) -> str:
-        return "add"
-
-    @property
-    def rule_type(self) -> str:
-        return self.payload.type
+    def to_command(self, idempotency_key: str | None) -> AddRulesCommand:
+        return AddRulesCommand(
+            rule_type=self.payload.type,
+            mode=self.payload.mode,
+            rules=[
+                RuleInput(mode=item.mode, value=item.value, active=item.active)
+                for item in self.payload.rules
+            ],
+            idempotency_key=idempotency_key,
+        )
 
 
 class DeleteRulePayload(BaseModel):
@@ -50,18 +62,16 @@ class DeleteRulePayload(BaseModel):
 
 
 class DeleteRuleMessage(BaseModel):
-    model_config = ConfigDict(extra="ignore", strict=True)
+    model_config = ConfigDict(extra="ignore", strict=True, populate_by_name=True)
     event: Literal["DELETE_RULE"] = Field(alias="eventType")
     timestamp: str
     payload: DeleteRulePayload
 
-    @property
-    def action(self) -> str:
-        return "delete"
-
-    @property
-    def ids(self) -> list[int]:
-        return self.payload.ids
+    def to_command(self, idempotency_key: str | None) -> DeleteRulesCommand:
+        return DeleteRulesCommand(
+            ids=self.payload.ids,
+            idempotency_key=idempotency_key,
+        )
 
 
 class UpdateStatusPayload(BaseModel):
@@ -71,22 +81,17 @@ class UpdateStatusPayload(BaseModel):
 
 
 class UpdateStatusMessage(BaseModel):
-    model_config = ConfigDict(extra="ignore", strict=True)
+    model_config = ConfigDict(extra="ignore", strict=True, populate_by_name=True)
     event: Literal["UPDATE_RULE"] = Field(alias="eventType")
     timestamp: str
     payload: UpdateStatusPayload
 
-    @property
-    def action(self) -> str:
-        return "update_status"
-
-    @property
-    def ids(self) -> list[int]:
-        return self.payload.ids
-
-    @property
-    def active(self) -> bool:
-        return self.payload.active
+    def to_command(self, idempotency_key: str | None) -> UpdateRulesStatusCommand:
+        return UpdateRulesStatusCommand(
+            ids=self.payload.ids,
+            active=self.payload.active,
+            idempotency_key=idempotency_key,
+        )
 
 
 FirewallMessage = Union[AddRuleMessage, DeleteRuleMessage, UpdateStatusMessage]
@@ -95,10 +100,10 @@ MessageAdapter = TypeAdapter(FirewallMessage)
 
 class FirewallRuleConsumer:
     def __init__(
-            self,
-            firewall_service: FirewallService,
-            connection: RabbitMQConnection | None = None,
-            queue_name: str | None = None,
+        self,
+        firewall_service: FirewallService,
+        connection: RabbitMQConnection | None = None,
+        queue_name: str | None = None,
     ) -> None:
         self._firewall_service = firewall_service
         self._connection = connection or rabbitmq_connection
@@ -119,7 +124,6 @@ class FirewallRuleConsumer:
         await self._channel.set_qos(prefetch_count=1)
 
         self._queue = await self._channel.declare_queue(self._queue_name, durable=True)
-
         self._consumer_tag = await self._queue.consume(self._handle_message)
         self._ready_event.set()
 
@@ -133,84 +137,115 @@ class FirewallRuleConsumer:
 
     async def _handle_message(self, message: IncomingMessage) -> None:
         async with message.process(requeue=False):
-            print(f" [DEBUG] Message received from queue: {self._queue_name}")
-            print(f" [DEBUG] Raw payload body: {message.body.decode('utf-8')}")
-            logger.info("message_received_from_queue", queue=self._queue_name)
+            logger.info(
+                "message_received",
+                queue=self._queue_name,
+                message_id=message.message_id,
+                redelivered=message.redelivered,
+            )
 
-            response_payload = {}
-            has_error = False
+            response = await self._process(message)
+            await self._reply(message, response)
 
+    async def _process(self, message: IncomingMessage) -> dict:
+        try:
+            parsed = MessageAdapter.validate_json(message.body)
+        except ValidationError as exc:
+            logger.error("invalid_message_format", error=str(exc))
+            return {
+                "status": "error",
+                "code": "VALIDATION_ERROR",
+                "message": str(exc),
+            }
+
+        idempotency_key = message.message_id or message.correlation_id
+        command = parsed.to_command(idempotency_key)
+
+        if idempotency_key:
             try:
-                payload = MessageAdapter.validate_json(message.body)
+                previous = await self._firewall_service.find_previous_result(
+                    idempotency_key
+                )
+            except Exception:
+                logger.exception("idempotency_lookup_failed", message_id=idempotency_key)
+                previous = None
 
-                if isinstance(payload, AddRuleMessage):
-                    result = await self._firewall_service.add_rules(payload)
-                elif isinstance(payload, DeleteRuleMessage):
-                    result = await self._firewall_service.delete_rules(payload)
-                elif isinstance(payload, UpdateStatusMessage):
-                    result = await self._firewall_service.update_rules_status(payload)
-                else:
-                    print(f" [DEBUG] Unknown action received!")
-                    logger.warning("unknown_action_received", body=message.body.decode('utf-8'))
-                    return
+            if previous is not None:
+                logger.info(
+                    "replaying_recorded_result",
+                    message_id=idempotency_key,
+                    action=command.action,
+                    count=len(previous),
+                )
+                return {"status": "success", "rules": previous}
 
-                if result.is_err:
-                    has_error = True
-                    error = result.unwrap_err()
-                    response_payload = {
-                        "status": "error",
-                        "code": error.code,
-                        "message": error.message
-                    }
-                    print(f" [BUSINESS ERROR] Code: {error.code} | Message: {error.message}")
-                    logger.error(
-                        "business_logic_error",
-                        error_code=error.code,
-                        message=error.message,
-                        action=payload.action
-                    )
-                else:
-                    data = result.unwrap() if hasattr(result, 'unwrap') else {}
-                    response_payload = {
-                        "status": "success",
-                        "data": data
-                    }
-                    print(f" [SUCCESS] Rules successfully processed and saved to Supabase!")
-                    logger.info("message_processed_and_saved_to_supabase_successfully", action=payload.action)
+        try:
+            if isinstance(command, AddRulesCommand):
+                result = await self._firewall_service.add_rules(command)
+            elif isinstance(command, DeleteRulesCommand):
+                result = await self._firewall_service.delete_rules(command)
+            else:
+                result = await self._firewall_service.update_rules_status(command)
 
-            except ValidationError as e:
-                has_error = True
-                response_payload = {
-                    "status": "error",
-                    "code": "VALIDATION_ERROR",
-                    "message": str(e)
-                }
-                print(f" [VALIDATION ERROR] {str(e)}")
-                logger.error("invalid_message_format", error=str(e), body=message.body.decode('utf-8'))
+        except IntegrityError as exc:
+            logger.error(
+                "integrity_error",
+                action=command.action,
+                message_id=idempotency_key,
+                error=str(exc.orig),
+            )
+            return {
+                "status": "error",
+                "code": "RULE_ALREADY_EXISTS",
+                "message": "The rule already exists in the database.",
+            }
 
-            except Exception as e:
-                has_error = True
-                response_payload = {
-                    "status": "error",
-                    "code": "INTERNAL_ERROR",
-                    "message": str(e)
-                }
-                print(f" [UNEXPECTED ERROR] {str(e)}")
-                logger.exception("unexpected_error_processing_message", error=str(e))
+        except Exception as exc:
+            logger.exception(
+                "unexpected_error_processing_message",
+                action=command.action,
+                message_id=idempotency_key,
+                error=str(exc),
+            )
+            return {
+                "status": "error",
+                "code": "INTERNAL_ERROR",
+                "message": "An unexpected error occurred while processing the command.",
+            }
 
+        if result.is_err:
+            error = result.unwrap_err()
+            logger.error(
+                "business_logic_error",
+                action=command.action,
+                error_code=error.code,
+                message=error.message,
+            )
+            return {
+                "status": "error",
+                "code": error.code,
+                "message": error.message,
+            }
 
-            if message.reply_to and message.correlation_id and self._channel:
-                try:
-                    reply_msg = Message(
-                        body=json.dumps(response_payload).encode('utf-8'),
-                        correlation_id=message.correlation_id,
-                        content_type="application/json"
-                    )
-                    await self._channel.default_exchange.publish(
-                        reply_msg,
-                        routing_key=message.reply_to
-                    )
-                    print(f" [DEBUG] RPC Reply successfully sent back to queue: {message.reply_to}")
-                except Exception as pub_err:
-                    print(f" [RPC REPLY ERROR] Failed to send reply: {str(pub_err)}")
-                    logger.error("failed_to_send_rpc_reply", error=str(pub_err))
+        rules = result.unwrap()
+        logger.info("command_processed", action=command.action, count=len(rules))
+        return {
+            "status": "success",
+            "rules": [rule.to_json() for rule in rules],
+        }
+
+    async def _reply(self, message: IncomingMessage, payload: dict) -> None:
+        if not (message.reply_to and message.correlation_id and self._channel):
+            return
+
+        try:
+            reply = Message(
+                body=json.dumps(payload).encode("utf-8"),
+                correlation_id=message.correlation_id,
+                content_type="application/json",
+            )
+            await self._channel.default_exchange.publish(
+                reply, routing_key=message.reply_to
+            )
+        except Exception as exc:
+            logger.error("failed_to_send_rpc_reply", error=str(exc))

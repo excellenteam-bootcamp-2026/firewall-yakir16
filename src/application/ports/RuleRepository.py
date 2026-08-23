@@ -1,21 +1,32 @@
 from abc import ABC, abstractmethod
-from typing import List, Optional
+from typing import Any, Dict, List, Optional
 
 from src.domain.Rule import Rule
 
 
 class RuleRepository(ABC):
-
     @abstractmethod
-    async def save(self, rule: Rule) -> None:
+    async def find_processed_result(
+        self, idempotency_key: str
+    ) -> Optional[List[Dict[str, Any]]]:
         pass
 
     @abstractmethod
-    async def save_all(self, rules: List[Rule]) -> None:
+    async def save_all_new(
+        self, rules: List[Rule], idempotency_key: Optional[str] = None
+    ) -> List[Rule]:
         pass
 
     @abstractmethod
-    async def delete(self, ids: List[int]) -> None:
+    async def update_status(
+        self, ids: List[int], active: bool, idempotency_key: Optional[str] = None
+    ) -> List[Rule]:
+        pass
+
+    @abstractmethod
+    async def delete(
+        self, ids: List[int], idempotency_key: Optional[str] = None
+    ) -> List[Rule]:
         pass
 
     @abstractmethod
@@ -27,9 +38,7 @@ class RuleRepository(ABC):
         pass
 
     @abstractmethod
-    async def check_exists(self, rule_type: str, value: str) -> bool:
-        pass
-
-    @abstractmethod
-    async def find_by_type_and_value(self, rule_type: str, value: str) -> Optional[Rule]:
+    async def find_by_type_and_values(
+        self, rule_type: str, values: List[str]
+    ) -> List[Rule]:
         pass

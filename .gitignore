@@ -216,3 +216,16 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Runtime output
+logs/
+
+# Alembic bytecode
+alembic/__pycache__/
+alembic/versions/__pycache__/
+
+# Environment
+# .env.example is committed on purpose: it documents what the service needs.
+.env
+.env.test
+*:Zone.Identifier.idea/

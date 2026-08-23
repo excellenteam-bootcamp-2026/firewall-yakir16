@@ -1,12 +1,14 @@
 import asyncio
 from typing import Optional
+
+from sqlalchemy import text
 from sqlalchemy.ext.asyncio import (
     AsyncEngine,
     AsyncSession,
     async_sessionmaker,
     create_async_engine,
 )
-from sqlalchemy import text
+
 from src.main.config import settings
 from src.main.logger import logger
 
@@ -25,19 +27,20 @@ class DatabaseService:
         return cls._instance
 
     async def connect_with_retry(self, max_retries: int = 5) -> None:
-
         db_url = settings.database_uri
         if db_url.startswith("postgresql://"):
             db_url = db_url.replace("postgresql://", "postgresql+asyncpg://", 1)
-
 
         self.engine = create_async_engine(
             db_url,
             echo=False,
             pool_pre_ping=True,
+            pool_size=5,
+            max_overflow=10,
+            pool_recycle=1800,
+            pool_timeout=30,
             connect_args={"statement_cache_size": 0},
         )
-
 
         self.session_factory = async_sessionmaker(
             bind=self.engine,
@@ -45,14 +48,11 @@ class DatabaseService:
             expire_on_commit=False,
         )
 
-        attempt = 1
+        interval_seconds = settings.db_connection_interval / 1000.0
+        last_error: Optional[Exception] = None
 
-        initial_interval_ms = getattr(settings, "db_connection_interval", 1000)
-        current_interval_seconds = initial_interval_ms / 1000.0
-
-        while attempt <= max_retries:
+        for attempt in range(1, max_retries + 1):
             try:
-
                 async with self.engine.connect() as conn:
                     await conn.execute(text("SELECT 1"))
 
@@ -64,6 +64,7 @@ class DatabaseService:
                 return
 
             except Exception as exc:
+                last_error = exc
                 logger.error(
                     "database_connection_failed",
                     attempt=attempt,
@@ -71,27 +72,21 @@ class DatabaseService:
                     error=str(exc),
                 )
 
-                if attempt == max_retries:
-                    logger.critical("database_max_retries_reached_halting")
+                if attempt < max_retries:
+                    logger.info(
+                        "database_waiting_for_retry",
+                        wait_seconds=interval_seconds,
+                    )
+                    await asyncio.sleep(interval_seconds)
+                    interval_seconds *= 2
 
-                    raise SystemExit(1)
-
-                logger.info(
-                    "database_waiting_for_retry",
-                    wait_seconds=current_interval_seconds,
-                )
-                await asyncio.sleep(current_interval_seconds)
-
-
-                current_interval_seconds *= 2
-                attempt += 1
+        logger.critical("database_max_retries_reached")
+        raise last_error if last_error else RuntimeError("Database unavailable.")
 
     async def close(self) -> None:
-
         if self.engine:
             await self.engine.dispose()
             logger.info("database_connection_closed")
-
 
 
 database_service = DatabaseService.get_instance()
