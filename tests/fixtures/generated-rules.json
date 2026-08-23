@@ -1,0 +1,362 @@
+[
+  {
+    "type": "ip",
+    "mode": "blacklist",
+    "value": "0.0.0.0",
+    "active": false
+  },
+  {
+    "type": "ip",
+    "mode": "whitelist",
+    "value": "255.255.255.255",
+    "active": true
+  },
+  {
+    "type": "ip",
+    "mode": "blacklist",
+    "value": "1.1.1.1",
+    "active": true
+  },
+  {
+    "type": "ip",
+    "mode": "whitelist",
+    "value": "127.0.0.1",
+    "active": false
+  },
+  {
+    "type": "ip",
+    "mode": "blacklist",
+    "value": "10.0.0.1",
+    "active": true
+  },
+  {
+    "type": "ip",
+    "mode": "whitelist",
+    "value": "172.16.0.1",
+    "active": true
+  },
+  {
+    "type": "ip",
+    "mode": "blacklist",
+    "value": "192.168.1.1",
+    "active": false
+  },
+  {
+    "type": "ip",
+    "mode": "whitelist",
+    "value": "8.8.8.8",
+    "active": true
+  },
+  {
+    "type": "ip",
+    "mode": "blacklist",
+    "value": "100.64.0.1",
+    "active": true
+  },
+  {
+    "type": "ip",
+    "mode": "whitelist",
+    "value": "203.0.113.1",
+    "active": false
+  },
+  {
+    "type": "ip",
+    "mode": "blacklist",
+    "value": "67.198.109.94",
+    "active": true
+  },
+  {
+    "type": "ip",
+    "mode": "whitelist",
+    "value": "23.130.177.151",
+    "active": true
+  },
+  {
+    "type": "ip",
+    "mode": "blacklist",
+    "value": "103.215.87.64",
+    "active": false
+  },
+  {
+    "type": "ip",
+    "mode": "whitelist",
+    "value": "36.5.117.133",
+    "active": true
+  },
+  {
+    "type": "ip",
+    "mode": "blacklist",
+    "value": "24.161.120.62",
+    "active": true
+  },
+  {
+    "type": "ip",
+    "mode": "whitelist",
+    "value": "64.40.27.30",
+    "active": false
+  },
+  {
+    "type": "ip",
+    "mode": "blacklist",
+    "value": "91.221.89.254",
+    "active": true
+  },
+  {
+    "type": "ip",
+    "mode": "whitelist",
+    "value": "63.74.78.138",
+    "active": true
+  },
+  {
+    "type": "ip",
+    "mode": "blacklist",
+    "value": "147.244.205.190",
+    "active": false
+  },
+  {
+    "type": "ip",
+    "mode": "whitelist",
+    "value": "77.160.62.65",
+    "active": true
+  },
+  {
+    "type": "domain",
+    "mode": "blacklist",
+    "value": "a.io",
+    "active": false
+  },
+  {
+    "type": "domain",
+    "mode": "whitelist",
+    "value": "my-site.com",
+    "active": true
+  },
+  {
+    "type": "domain",
+    "mode": "blacklist",
+    "value": "a.b.c.d.example.com",
+    "active": true
+  },
+  {
+    "type": "domain",
+    "mode": "whitelist",
+    "value": "123numeric.example.org",
+    "active": false
+  },
+  {
+    "type": "domain",
+    "mode": "blacklist",
+    "value": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx.com",
+    "active": true
+  },
+  {
+    "type": "domain",
+    "mode": "whitelist",
+    "value": "example.technology",
+    "active": true
+  },
+  {
+    "type": "domain",
+    "mode": "blacklist",
+    "value": "sub.domain-with-hyphens.co.uk",
+    "active": false
+  },
+  {
+    "type": "domain",
+    "mode": "whitelist",
+    "value": "test123.example.net",
+    "active": true
+  },
+  {
+    "type": "domain",
+    "mode": "blacklist",
+    "value": "a1.b2.c3.example.io",
+    "active": true
+  },
+  {
+    "type": "domain",
+    "mode": "whitelist",
+    "value": "archive.example.museum",
+    "active": false
+  },
+  {
+    "type": "domain",
+    "mode": "blacklist",
+    "value": "tiny-interviewer.biz",
+    "active": true
+  },
+  {
+    "type": "domain",
+    "mode": "whitelist",
+    "value": "knotty-co-producer.info",
+    "active": true
+  },
+  {
+    "type": "domain",
+    "mode": "blacklist",
+    "value": "wee-coil.com",
+    "active": false
+  },
+  {
+    "type": "domain",
+    "mode": "whitelist",
+    "value": "friendly-battle.com",
+    "active": true
+  },
+  {
+    "type": "domain",
+    "mode": "blacklist",
+    "value": "staid-cd.net",
+    "active": true
+  },
+  {
+    "type": "domain",
+    "mode": "whitelist",
+    "value": "alarmed-interviewer.info",
+    "active": false
+  },
+  {
+    "type": "domain",
+    "mode": "blacklist",
+    "value": "unsung-straw.info",
+    "active": true
+  },
+  {
+    "type": "domain",
+    "mode": "whitelist",
+    "value": "noted-cafe.info",
+    "active": true
+  },
+  {
+    "type": "domain",
+    "mode": "blacklist",
+    "value": "warmhearted-monocle.biz",
+    "active": false
+  },
+  {
+    "type": "domain",
+    "mode": "whitelist",
+    "value": "lively-scrap.name",
+    "active": true
+  },
+  {
+    "type": "port",
+    "mode": "blacklist",
+    "value": 1,
+    "active": false
+  },
+  {
+    "type": "port",
+    "mode": "whitelist",
+    "value": 65535,
+    "active": true
+  },
+  {
+    "type": "port",
+    "mode": "blacklist",
+    "value": 22,
+    "active": true
+  },
+  {
+    "type": "port",
+    "mode": "whitelist",
+    "value": 80,
+    "active": false
+  },
+  {
+    "type": "port",
+    "mode": "blacklist",
+    "value": 443,
+    "active": true
+  },
+  {
+    "type": "port",
+    "mode": "whitelist",
+    "value": 1024,
+    "active": true
+  },
+  {
+    "type": "port",
+    "mode": "blacklist",
+    "value": 3000,
+    "active": false
+  },
+  {
+    "type": "port",
+    "mode": "whitelist",
+    "value": 5432,
+    "active": true
+  },
+  {
+    "type": "port",
+    "mode": "blacklist",
+    "value": 5671,
+    "active": true
+  },
+  {
+    "type": "port",
+    "mode": "whitelist",
+    "value": 6543,
+    "active": false
+  },
+  {
+    "type": "port",
+    "mode": "blacklist",
+    "value": 11879,
+    "active": true
+  },
+  {
+    "type": "port",
+    "mode": "whitelist",
+    "value": 25570,
+    "active": true
+  },
+  {
+    "type": "port",
+    "mode": "blacklist",
+    "value": 56503,
+    "active": false
+  },
+  {
+    "type": "port",
+    "mode": "whitelist",
+    "value": 30806,
+    "active": true
+  },
+  {
+    "type": "port",
+    "mode": "blacklist",
+    "value": 16002,
+    "active": true
+  },
+  {
+    "type": "port",
+    "mode": "whitelist",
+    "value": 60401,
+    "active": false
+  },
+  {
+    "type": "port",
+    "mode": "blacklist",
+    "value": 37847,
+    "active": true
+  },
+  {
+    "type": "port",
+    "mode": "whitelist",
+    "value": 30768,
+    "active": true
+  },
+  {
+    "type": "port",
+    "mode": "blacklist",
+    "value": 20992,
+    "active": false
+  },
+  {
+    "type": "port",
+    "mode": "whitelist",
+    "value": 39265,
+    "active": true
+  }
+]

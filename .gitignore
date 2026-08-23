@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+npm-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Build output
+dist/
+build/
+*.tsbuildinfo
+
+# Test output
+coverage/
+.nyc_output/
+
+# Environment
+# .env.example and .env.test are committed on purpose: the first documents
+# which variables are required, the second holds throwaway values the test
+# suite needs because env.ts validates at import time.
+.env
+.env.dev
+.env.prod
+.env.local
+.env.*.local
+
+# Drizzle output — the Python service owns the schema through Alembic, so
+# anything generated here is a local artefact.
+drizzle/
+
+# Logs
+logs/
+*.log
+
+# Editors
+.idea/
+.vscode/
+*.swp
+
+# OS
+.DS_Store
+Thumbs.db.idea/
+*:Zone.Identifier
